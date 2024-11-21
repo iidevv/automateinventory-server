@@ -1,8 +1,7 @@
 import express, { Request, Response } from 'express';
-// import PostRouter from "./routes/blog.route";
-import { PrismaClient } from "@prisma/client";
-
-export const prisma = new PrismaClient();
+import { prisma } from './models/prisma';
+import passport from 'passport';
+import authRoutes from './routes/authRoutes';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -11,13 +10,9 @@ const port = process.env.PORT || 3001;
 async function main() {
     app.use(express.json());
 
-    // Register API routes
-    // app.use("/api/v1/post", PostRouter);
+    app.use(passport.initialize());
 
-    // Catch unregistered routes
-    app.all("*", (req: Request, res: Response) => {
-        res.status(404).json({ error: `Route ${req.originalUrl} not found` });
-    });
+    app.use('/auth', authRoutes);
 
     app.listen(port, () => {
         console.log(`Server is listening on port ${port}`);
