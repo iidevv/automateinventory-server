@@ -4,7 +4,6 @@ import { authenticateJWT } from '../config/passport';
 
 const router = Router();
 
-// Public route for logging in
 router.post('/login', async (req, res) => {
     try {
         await loginUser(req, res);
