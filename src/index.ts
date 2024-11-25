@@ -3,6 +3,9 @@ import { prisma } from './models/prisma';
 import passport from 'passport';
 import authRoutes from './routes/authRoutes';
 import cors from 'cors';
+import { config } from "dotenv";
+
+config();
 
 const app = express();
 const port = process.env.PORT || 3001;

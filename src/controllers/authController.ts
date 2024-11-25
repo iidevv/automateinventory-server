@@ -7,7 +7,7 @@ const ERROR_MESSAGE = "Your username and password don't match. Please try again.
 
 export const loginUser = async (req: Request, res: Response) => {
     const { email, password } = req.body;
-
+        
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
