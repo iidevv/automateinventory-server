@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,8 +8,62 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(cuid())
-  email    String  @unique
+  id       String             @id @default(cuid())
+  email    String             @unique
   name     String?
   password String
+  products InventoryProduct[] @relation("UserToProducts")
+  managers   Manager[] @relation("UserToManagers")
+
+  @@map("users")
+}
+
+model Manager {
+    id       String             @id @default(cuid())
+  userId    Int
+  adminId   Int
+  createdAt DateTime @default(now())
+
+  admin    User               @relation("UserToManagers", fields: [adminId], references: [id])
+  products InventoryProduct[]
+
+  @@map("managers")
+}
+
+model InventoryProduct {
+  id                  Int                 @id @default(autoincrement())
+  vendor              String
+  vendorSku           String
+  storeSku            String
+  storeProductId      String
+  storeItemId         String
+  quantity            Int
+  quantityLevel       QuantityLevel       @default(NONE)
+  price               Int
+  priceAdjustment     Int                 @default(0)
+  priceAdjustmentType priceAdjustmentType @default(FIXED)
+  admin               User                @relation("UserToProducts", fields: [adminId], references: [id])
+  adminId             String
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  Manager             Manager?            @relation(fields: [managerId], references: [id])
+  managerId           Int?
+}
+
+enum priceAdjustmentType {
+  PERCENT
+  FIXED
+}
+
+enum QuantityLevel {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Role {
+  MANAGER
+  ADMIN
+  SUPER_ADMIN
 }
