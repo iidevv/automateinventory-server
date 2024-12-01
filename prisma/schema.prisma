@@ -7,50 +7,140 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id       String             @id @default(cuid())
-  email    String             @unique
-  name     String?
-  password String
-  products InventoryProduct[] @relation("UserToProducts")
-  managers   Manager[] @relation("UserToManagers")
+model Instance {
+  id        String             @id @default(cuid())
+  name      String             @unique
+  users     User[]             @relation("InstanceToUsers")
+  products  Product[]
+  settings  Setting[]
+  stores    Store[]
+  vendors   Vendor[]
+  catalogs  Catalog[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 
+  @@map("instances")
+}
+
+model User {
+  id              String             @id @default(cuid())
+  email           String             @unique
+  name            String?
+  password        String
+  role            Role               @default(ADMIN)
+  instanceId      String
+  instance        Instance           @relation("InstanceToUsers", fields: [instanceId], references: [id])
+  products        Product[] @relation("UserToProducts")
+  managedProducts Product[] @relation("ManagerToProducts")
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([instanceId])
   @@map("users")
 }
 
-model Manager {
-    id       String             @id @default(cuid())
-  userId    Int
-  adminId   Int
-  createdAt DateTime @default(now())
-
-  admin    User               @relation("UserToManagers", fields: [adminId], references: [id])
-  products InventoryProduct[]
-
-  @@map("managers")
-}
-
-model InventoryProduct {
+model Product {
   id                  Int                 @id @default(autoincrement())
   vendor              String
-  vendorSku           String
+  vendorSku           String              @unique
+  storeId             String
   storeSku            String
-  storeProductId      String
   storeItemId         String
   quantity            Int
   quantityLevel       QuantityLevel       @default(NONE)
-  price               Int
-  priceAdjustment     Int                 @default(0)
-  priceAdjustmentType priceAdjustmentType @default(FIXED)
-  admin               User                @relation("UserToProducts", fields: [adminId], references: [id])
-  adminId             String
+  price               Float
+  priceAdjustment     Float               @default(0.0)
+  priceAdjustmentType priceAdjustmentType @default(NONE)
+  userId              String
+  instanceId          String
+  managerId           String?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
-  Manager             Manager?            @relation(fields: [managerId], references: [id])
-  managerId           Int?
+
+  user     User     @relation("UserToProducts", fields: [userId], references: [id])
+  manager  User?    @relation("ManagerToProducts", fields: [managerId], references: [id])
+  instance Instance @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([vendorSku])
+  @@index([storeSku])
+  @@index([userId])
+  @@index([managerId])
+  @@map("products")
+}
+
+model Setting {
+  id         Int      @id @default(autoincrement())
+  instanceId String
+  key        String   @unique
+  value      String
+  instance   Instance @relation(fields: [instanceId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([instanceId])
+  @@map("settings")
+}
+
+model Store {
+  id          Int       @id @default(autoincrement())
+  type        StoreType
+  credentials Json
+  instanceId  String
+  instance    Instance  @relation(fields: [instanceId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([instanceId])
+  @@map("stores")
+}
+
+model Vendor {
+  id         Int        @id @default(autoincrement())
+  type       VendorType
+  connection Json
+  instanceId String
+  instance   Instance   @relation(fields: [instanceId], references: [id])
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([instanceId])
+  @@map("vendors")
+}
+
+model Catalog {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  instanceId  String
+  instance    Instance @relation(fields: [instanceId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([instanceId])
+  @@map("catalogs")
+}
+
+enum StoreType {
+  WOOCOMMERCE
+  SHOPIFY
+  BIGCOMMERCE
+}
+
+enum VendorType {
+  FTP
+  API
+  SPREADSHEET
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
 }
 
 enum priceAdjustmentType {
+  NONE
   PERCENT
   FIXED
 }
@@ -60,10 +150,4 @@ enum QuantityLevel {
   LOW
   MEDIUM
   HIGH
-}
-
-enum Role {
-  MANAGER
-  ADMIN
-  SUPER_ADMIN
 }
